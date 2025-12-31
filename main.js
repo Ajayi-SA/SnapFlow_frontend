@@ -1,5 +1,5 @@
 
-const API='https://YOUR-SNAPFLOW-APP.azurewebsites.net/api';
+const API='https://snapflow-gfa6gsgwezehghbt.spaincentral-01.azurewebsites.net/api';
 const token=localStorage.getItem('token');
 
 async function register(){
