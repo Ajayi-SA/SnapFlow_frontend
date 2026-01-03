@@ -3,11 +3,30 @@ const API='https://snapflow-gfa6gsgwezehghbt.spaincentral-01.azurewebsites.net/a
 
 const token=localStorage.getItem('token');
 
-async function register(){
-  await fetch(API+'/register',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({name:name.value,email:email.value,password:password.value,role:role.value})});
-  location.href='login.html';
+async function register() {
+  try {
+    const res = await fetch(API + '/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: name.value,
+        email: email.value,
+        password: password.value,
+        role: role.value
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Registration failed');
+
+    alert('Account created successfully');
+    window.location.href = 'login.html';
+  } catch (err) {
+    alert(err.message);
+    console.error(err);
+  }
 }
+
 
 async function login(){
   const r=await fetch(API+'/login',{method:'POST',headers:{'Content-Type':'application/json'},
