@@ -1,17 +1,26 @@
-
+/* =========================
+   CONFIG
+========================= */
 const API = 'https://snapflow-api-c6h8h9cpcda5ctf8.spaincentral-01.azurewebsites.net/api';
 
-
-function getToken(){
+/* =========================
+   HELPERS
+========================= */
+function getToken() {
   return localStorage.getItem('token');
 }
 
-headers:{ Authorization:'Bearer ' + getToken() }
+function authHeaders() {
+  const token = getToken();
+  return token ? { Authorization: 'Bearer ' + token } : {};
+}
 
-
+/* =========================
+   AUTH
+========================= */
 async function register() {
   try {
-    const res = await fetch(API + '/register', {
+    const res = await fetch(`${API}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -27,16 +36,16 @@ async function register() {
 
     alert('Account created successfully');
     window.location.href = 'login.html';
+
   } catch (err) {
     alert(err.message);
     console.error(err);
   }
 }
 
-
-async function login(){
+async function login() {
   try {
-    const r = await fetch(API + '/login', {
+    const res = await fetch(`${API}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -45,14 +54,11 @@ async function login(){
       })
     });
 
-    const d = await r.json();
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login failed');
 
-    if (!r.ok) {
-      throw new Error(d.error || 'Login failed');
-    }
-
-    localStorage.setItem('token', d.token);
-    location.href = d.role === 'creator' ? 'creator.html' : 'index.html';
+    localStorage.setItem('token', data.token);
+    window.location.href = data.role === 'creator' ? 'creator.html' : 'index.html';
 
   } catch (err) {
     alert(err.message);
@@ -60,48 +66,120 @@ async function login(){
   }
 }
 
+/* =========================
+   CONTENT ACTIONS
+========================= */
+async function upload() {
+  try {
+    const fd = new FormData();
+    fd.append('title', title.value);
+    fd.append('image', image.files[0]);
 
-async function upload(){
-  const fd=new FormData();
-  fd.append('title',title.value);
-  fd.append('image',image.files[0]);
-  await fetch(API+'/photos',{method:'POST',headers:{Authorization:'Bearer '+token},body:fd});
-  location.href='index.html';
-}
+    const res = await fetch(`${API}/photos`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: fd
+    });
 
-async function react(id,t){
-  await fetch(`${API}/photos/${id}/react/${t}`,{method:'POST',headers:{Authorization:'Bearer '+token}});
-  loadFeed();
-}
+    if (!res.ok) throw new Error('Upload failed');
+    window.location.href = 'index.html';
 
-async function comment(e,id){
-  if(e.key==='Enter'){
-    await fetch(`${API}/photos/${id}/comment`,{method:'POST',
-      headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
-      body:JSON.stringify({text:e.target.value})});
-    loadFeed();
+  } catch (err) {
+    alert(err.message);
+    console.error(err);
   }
 }
 
-async function share(id){
-  await fetch(`${API}/photos/${id}/share`,{method:'POST',headers:{Authorization:'Bearer '+token}});
-  loadFeed();
+async function react(id, type) {
+  try {
+    await fetch(`${API}/photos/${id}/react/${type}`, {
+      method: 'POST',
+      headers: authHeaders()
+    });
+    loadFeed();
+  } catch (err) {
+    console.error(err);
+  }
 }
 
-async function loadFeed(){
-  const r=await fetch(API+'/photos');
-  const d=await r.json();
-  feed.innerHTML=d.map(p=>`
-  <div class="card">
-    <img src="${p.url}">
-    <h3>${p.title}</h3>
-    <p>by ${p.creator}</p>
-    <button onclick="react('${p.id}','like')">👍 ${p.reactions.like}</button>
-    <button onclick="react('${p.id}','love')">❤️ ${p.reactions.love}</button>
-    <button onclick="react('${p.id}','wow')">😮 ${p.reactions.wow}</button>
-    <button onclick="react('${p.id}','sad')">😢 ${p.reactions.sad}</button>
-    <button onclick="share('${p.id}')">🔗 ${p.shares}</button>
-    <input placeholder="Add comment…" onkeydown="comment(event,'${p.id}')">
-  </div>`).join('');
+async function share(id) {
+  try {
+    await fetch(`${API}/photos/${id}/share`, {
+      method: 'POST',
+      headers: authHeaders()
+    });
+    loadFeed();
+  } catch (err) {
+    console.error(err);
+  }
 }
-if(document.getElementById('feed')) loadFeed();
+
+async function comment(e, id) {
+  if (e.key !== 'Enter') return;
+
+  try {
+    await fetch(`${API}/photos/${id}/comment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders()
+      },
+      body: JSON.stringify({ text: e.target.value })
+    });
+
+    e.target.value = '';
+    loadFeed();
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+/* =========================
+   FEED
+========================= */
+async function loadFeed() {
+  const feed = document.getElementById('feed');
+  if (!feed) return;
+
+  try {
+    const res = await fetch(`${API}/photos`);
+    if (!res.ok) throw new Error('Failed to load feed');
+
+    const data = await res.json();
+
+    feed.innerHTML = data.map(p => `
+      <div class="card">
+        <img src="${p.url}" alt="${p.title}">
+        <h3>${p.title}</h3>
+        <p>by ${p.creator}</p>
+
+        <div class="actions">
+          <button onclick="react('${p.id}','like')">👍 ${p.reactions.like}</button>
+          <button onclick="react('${p.id}','love')">❤️ ${p.reactions.love}</button>
+          <button onclick="react('${p.id}','wow')">😮 ${p.reactions.wow}</button>
+          <button onclick="react('${p.id}','sad')">😢 ${p.reactions.sad}</button>
+          <button onclick="share('${p.id}')">🔗 ${p.shares}</button>
+        </div>
+
+        <input
+          placeholder="Add comment…"
+          onkeydown="comment(event,'${p.id}')"
+        >
+      </div>
+    `).join('');
+
+  } catch (err) {
+    console.error(err);
+    feed.innerHTML = '<p>Unable to load feed.</p>';
+  }
+}
+
+/* =========================
+   INIT
+========================= */
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.getElementById('feed')) {
+    loadFeed();
+  }
+});
