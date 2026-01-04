@@ -1,7 +1,12 @@
 
 const API='https://snapflow-api.azurewebsites.net/api';
 
-const token=localStorage.getItem('token');
+function getToken(){
+  return localStorage.getItem('token');
+}
+
+headers:{ Authorization:'Bearer ' + getToken() }
+
 
 async function register() {
   try {
