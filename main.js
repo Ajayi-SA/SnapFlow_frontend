@@ -29,12 +29,31 @@ async function register() {
 
 
 async function login(){
-  const r=await fetch(API+'/login',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({email:email.value,password:password.value})});
-  const d=await r.json();
-  localStorage.setItem('token',d.token);
-  location.href=d.role==='creator'?'creator.html':'index.html';
+  try {
+    const r = await fetch(API + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email.value,
+        password: password.value
+      })
+    });
+
+    const d = await r.json();
+
+    if (!r.ok) {
+      throw new Error(d.error || 'Login failed');
+    }
+
+    localStorage.setItem('token', d.token);
+    location.href = d.role === 'creator' ? 'creator.html' : 'index.html';
+
+  } catch (err) {
+    alert(err.message);
+    console.error(err);
+  }
 }
+
 
 async function upload(){
   const fd=new FormData();
