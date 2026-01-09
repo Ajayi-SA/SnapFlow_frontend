@@ -58,7 +58,8 @@ async function login() {
     if (!res.ok) throw new Error(data.error || 'Login failed');
 
     localStorage.setItem('token', data.token);
-    window.location.href = data.role === 'creator' ? 'creator.html' : 'index.html';
+    window.location.href =
+      data.role === 'creator' ? 'creator.html' : 'index.html';
 
   } catch (err) {
     alert(err.message);
@@ -152,14 +153,28 @@ async function loadFeed() {
       <div class="card">
         <img src="${p.url}" alt="${p.title}">
         <h3>${p.title}</h3>
-        <p>by ${p.creator}</p>
+        <p>by ${p.creator || 'SnapFlow User'}</p>
 
         <div class="actions">
-          <button onclick="react('${p.id}','like')">👍 ${p.reactions.like}</button>
-          <button onclick="react('${p.id}','love')">❤️ ${p.reactions.love}</button>
-          <button onclick="react('${p.id}','wow')">😮 ${p.reactions.wow}</button>
-          <button onclick="react('${p.id}','sad')">😢 ${p.reactions.sad}</button>
-          <button onclick="share('${p.id}')">🔗 ${p.shares}</button>
+          <button onclick="react('${p.id}','like')">
+            &#128077; ${p.reactions?.like || 0}
+          </button>
+
+          <button onclick="react('${p.id}','love')">
+            &#10084;&#65039; ${p.reactions?.love || 0}
+          </button>
+
+          <button onclick="react('${p.id}','wow')">
+            &#128562; ${p.reactions?.wow || 0}
+          </button>
+
+          <button onclick="react('${p.id}','sad')">
+            &#128546; ${p.reactions?.sad || 0}
+          </button>
+
+          <button onclick="share('${p.id}')">
+            &#128279; ${p.shares || 0}
+          </button>
         </div>
 
         <input
